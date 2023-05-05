@@ -1,10 +1,17 @@
 #include "engine/Engine.h"
 
+using namespace VoxelEngine;
+
 int main()
 {
-	VoxelEngine::Log::init();
+	Log::init();
 
-	ENGINE_INFO("Hello, world!");
+	Window window("SVO Raytracer", 800, 600, true);
+
+	while (!window.ShouldClose())
+	{
+		window.Update();
+	}
 
 	return 0;
 }
