@@ -17,7 +17,7 @@ int main()
 
 		camera.Update(1.0f / 60.0f, 800, 600);
 
-		renderer.Render(&camera);
+		renderer.Render(camera.GetCameraMatrix());
 
 		window.Update();
 	}

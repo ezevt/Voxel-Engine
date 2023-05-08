@@ -10,39 +10,37 @@ namespace VoxelEngine {
 
 	void DebugCamera::Update(float ts, uint32_t width, uint32_t height)
 	{
-		Resolution = { width, height };
-
 		if (m_Input->IsKeyPressed(Key::W))
 		{
-			Position += speed * Orientation * ts;
+			Position += m_Speed * m_Orientation * ts;
 		}
 		if (m_Input->IsKeyPressed(Key::A))
 		{
-			Position += speed * -glm::normalize(glm::cross(Orientation, Up)) * ts;
+			Position += m_Speed * -glm::normalize(glm::cross(m_Orientation, m_Up)) * ts;
 		}
 		if (m_Input->IsKeyPressed(Key::S))
 		{
-			Position += speed * -Orientation * ts;
+			Position += m_Speed * -m_Orientation * ts;
 		}
 		if (m_Input->IsKeyPressed(Key::D))
 		{
-			Position += speed * glm::normalize(glm::cross(Orientation, Up)) * ts;
+			Position += m_Speed * glm::normalize(glm::cross(m_Orientation, m_Up)) * ts;
 		}
 		if (m_Input->IsKeyPressed(Key::Space))
 		{
-			Position += speed * Up * ts;
+			Position += m_Speed * m_Up * ts;
 		}
 		if (m_Input->IsKeyPressed(Key::LeftControl))
 		{
-			Position += speed * -Up * ts;
+			Position += m_Speed * -m_Up * ts;
 		}
 		if (m_Input->IsKeyPressed(Key::LeftShift))
 		{
-			speed = 11.1f;
+			m_Speed = Speed * 7.0f;
 		}
 		else
 		{
-			speed = 1.5f;
+			m_Speed = Speed;
 		}
 
 		if (m_Input->IsMouseButtonPressed(Mouse::ButtonLeft))
@@ -50,32 +48,32 @@ namespace VoxelEngine {
 
 			// glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 
-			if (firstClick)
+			if (m_FirstClick)
 			{
 				m_Input->SetMousePosition((width / 2), (height / 2));
-				firstClick = false;
+				m_FirstClick = false;
 			}
 
 
 			glm::vec2 mousePos = m_Input->GetMousePosition();
 
-			float rotX = sensitivity * (float)(mousePos.y - (height / 2)) / height;
-			float rotY = sensitivity * (float)(mousePos.x - (width / 2)) / width;
+			float rotX = Sensitivity * (float)(mousePos.y - (height / 2)) / height;
+			float rotY = Sensitivity * (float)(mousePos.x - (width / 2)) / width;
 
-			glm::vec3 newOrientation = glm::rotate(Orientation, glm::radians(-rotX), glm::normalize(glm::cross(Orientation, Up)));
+			glm::vec3 newOrientation = glm::rotate(m_Orientation, glm::radians(-rotX), glm::normalize(glm::cross(m_Orientation, m_Up)));
 
-			if (abs(glm::angle(newOrientation, Up) - glm::radians(90.0f)) <= glm::radians(90.0f))
+			if (abs(glm::angle(newOrientation, m_Up) - glm::radians(90.0f)) <= glm::radians(90.0f))
 			{
-				Orientation = newOrientation;
+				m_Orientation = newOrientation;
 			}
 
-			Orientation = glm::rotate(Orientation, glm::radians(-rotY), Up);
+			m_Orientation = glm::rotate(m_Orientation, glm::radians(-rotY), m_Up);
 
 			m_Input->SetMousePosition((width / 2), (height / 2));
 		}
 		else
 		{
-			firstClick = true;
+			m_FirstClick = true;
 		}
 
 		float FOVdeg = 90.0f;
@@ -85,12 +83,11 @@ namespace VoxelEngine {
 		glm::mat4 view = glm::mat4(1.0f);
 		glm::mat4 projection = glm::mat4(1.0f);
 
-		view = glm::lookAt(Position, Position + Orientation, Up);
+		view = glm::lookAt(Position, Position + m_Orientation, m_Up);
 		if (width != 0 && height != 0)
 			projection = glm::perspective(glm::radians(FOVdeg), (float)((float)width / (float)height), nearPlane, farPlane);
 
-		Projection = projection;
-		View = view;
-		Matrix = projection * view;
+		m_Projection = projection;
+		m_View = view;
 	}
 }

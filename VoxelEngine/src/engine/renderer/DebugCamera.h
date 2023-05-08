@@ -12,25 +12,26 @@ namespace VoxelEngine {
 	class DebugCamera
 	{
 	public:
-		// Stores the main vectors of the camera
-		glm::vec3 Position = glm::vec3(0);
-		glm::vec3 Orientation = glm::vec3(0.0f, 0.0f, -1.0f);
-		glm::vec3 Up = glm::vec3(0.0f, 1.0f, 0.0f);
-		glm::mat4 Matrix = glm::mat4(1.0f);
-		glm::mat4 Projection = glm::mat4(1.0f);
-		glm::mat4 View = glm::mat4(1.0f);
-		glm::vec2 Resolution = glm::vec2(1.0f);
-		// Prevents the camera from jumping around when first clicking left click
-		bool firstClick = true;
-
-		Input* m_Input;
-
-		float speed = 0.1f;
-		float sensitivity = 100.0f;
-
 		DebugCamera(Input* input);
 
 		void Update(float ts, uint32_t width, uint32_t height);
+
+		glm::mat4 GetCameraMatrix() { return m_Projection * m_View; }
+
+		glm::vec3 Position = glm::vec3(0);
+		float Speed = 0.1f;
+		float Sensitivity = 100.0f;
+	private:
+		bool m_FirstClick = true;
+		float m_Speed;
+
+		Input* m_Input;
+
+		glm::vec3 m_Orientation = glm::vec3(0.0f, 0.0f, -1.0f);
+		glm::vec3 m_Up = glm::vec3(0.0f, 1.0f, 0.0f);
+
+		glm::mat4 m_Projection = glm::mat4(1.0f);
+		glm::mat4 m_View = glm::mat4(1.0f);
 	};
 }
 
