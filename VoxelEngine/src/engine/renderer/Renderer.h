@@ -4,6 +4,7 @@
 
 #include "Shader.h"
 #include "engine/core/Base.h"
+#include "DebugCamera.h"
 
 namespace VoxelEngine {
     struct OctreeNode {
@@ -19,7 +20,7 @@ namespace VoxelEngine {
         Renderer();
         ~Renderer();
 
-        void Render();
+        void Render(DebugCamera* camera);
 
     private:
         Ref<Shader> screenShader;

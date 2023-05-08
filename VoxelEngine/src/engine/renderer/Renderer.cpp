@@ -4,6 +4,7 @@
 #include "glad/glad.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include "Renderer.h"
 #include "engine/core/Log.h"
@@ -52,12 +53,14 @@ namespace VoxelEngine {
         glDeleteBuffers(1, &m_EBO);
     }
 
-    void Renderer::Render()
+    void Renderer::Render(DebugCamera* camera)
     {
         glClearColor(1, 0, 0, 1);
         glClear(GL_COLOR_BUFFER_BIT);
 
         screenShader->Bind();
+        screenShader->SetMat4("u_CameraMatrix", camera->Projection*camera->View);
+
         glBindVertexArray(m_VAO);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);

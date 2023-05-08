@@ -18,6 +18,8 @@ namespace VoxelEngine {
 
 		void Update();
 	private:
+		friend class Input;
+	private:
 		GLFWwindow* m_WindowHandle;
 
 		uint32_t m_Width, m_Height;
