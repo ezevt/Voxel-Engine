@@ -19,7 +19,7 @@ namespace VoxelEngine {
 		glm::mat4 GetCameraMatrix() { return m_Projection * m_View; }
 
 		glm::vec3 Position = glm::vec3(0);
-		float Speed = 0.1f;
+		float Speed = 1.5f;
 		float Sensitivity = 100.0f;
 	private:
 		bool m_FirstClick = true;

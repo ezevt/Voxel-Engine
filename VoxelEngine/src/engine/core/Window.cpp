@@ -38,6 +38,11 @@ namespace VoxelEngine {
 
 		glfwMakeContextCurrent(m_WindowHandle);
 
+		glfwSetWindowSizeCallback(m_WindowHandle, [](GLFWwindow* window, int width, int height)
+			{
+				glViewport(0, 0, width, height);
+			});
+
 		if (vSync)
 		{
 			glfwSwapInterval(1);
@@ -60,6 +65,14 @@ namespace VoxelEngine {
 	Window::~Window()
 	{
 		glfwTerminate();
+	}
+
+	const glm::vec2& Window::GetSize() const
+	{
+		int width, height;
+		glfwGetWindowSize(m_WindowHandle, &width, &height);
+
+		return glm::ivec2(width, height);
 	}
 
 	void Window::Update()
