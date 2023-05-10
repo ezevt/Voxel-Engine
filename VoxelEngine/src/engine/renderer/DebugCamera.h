@@ -17,10 +17,12 @@ namespace VoxelEngine {
 		void Update(float ts, uint32_t width, uint32_t height);
 
 		glm::mat4 GetCameraMatrix() { return m_Projection * m_View; }
+		glm::mat4 GetViewMatrix() { return m_View; }
+		glm::mat4 GetProjectionMatrix() { return m_Projection; }
 
 		glm::vec3 Position = glm::vec3(0);
-		float Speed = 1.5f;
-		float Sensitivity = 100.0f;
+		float Speed = 3.0f;
+		float Sensitivity = 70.0f;
 	private:
 		bool m_FirstClick = true;
 		float m_Speed;

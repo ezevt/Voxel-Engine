@@ -10,6 +10,7 @@ int main()
 	Renderer renderer;
 	Input input(&window);
 	DebugCamera camera(&input);
+	camera.Position = glm::vec3(0.0f, 0.0f, 10.0f);
 
 	float lastFrameTime = window.GetTime();
 
@@ -24,7 +25,7 @@ int main()
 		auto windowSize = window.GetSize();
 		camera.Update(timeStep, windowSize.x, windowSize.y);
 
-		renderer.Render(camera.GetCameraMatrix());
+		renderer.Render(camera.GetViewMatrix(), camera.GetProjectionMatrix(), windowSize);
 
 		window.Update();
 	}

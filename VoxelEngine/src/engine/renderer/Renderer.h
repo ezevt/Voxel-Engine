@@ -20,7 +20,7 @@ namespace VoxelEngine {
         Renderer();
         ~Renderer();
 
-        void Render(const glm::mat4& camera);
+        void Render(const glm::mat4& cameraView, const glm::mat4& cameraProjection, const glm::vec2& screenSize);
 
     private:
         Ref<Shader> screenShader;

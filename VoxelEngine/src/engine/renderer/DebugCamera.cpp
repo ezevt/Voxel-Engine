@@ -76,7 +76,7 @@ namespace VoxelEngine {
 			m_FirstClick = true;
 		}
 
-		float FOVdeg = 90.0f;
+		float FOVdeg = 100.0f;
 		float nearPlane = 0.01f;
 		float farPlane = 5000.0f;
 

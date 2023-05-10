@@ -53,13 +53,15 @@ namespace VoxelEngine {
         glDeleteBuffers(1, &m_EBO);
     }
 
-    void Renderer::Render(const glm::mat4& camera)
+    void Renderer::Render(const glm::mat4& cameraView, const glm::mat4& cameraProjection, const glm::vec2& screenSize)
     {
         glClearColor(1, 0, 0, 1);
         glClear(GL_COLOR_BUFFER_BIT);
 
         screenShader->Bind();
-        screenShader->SetMat4("u_CameraMatrix", camera);
+        screenShader->SetMat4("u_CameraView", cameraView);
+        screenShader->SetMat4("u_CameraProjection", cameraProjection);
+        screenShader->SetFloat2("u_ScreenSize", screenSize);
 
         glBindVertexArray(m_VAO);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
