@@ -46,7 +46,7 @@ namespace VoxelEngine {
 		if (m_Input->IsMouseButtonPressed(Mouse::ButtonLeft))
 		{
 
-			// glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+			m_Input->HideCursor(true);
 
 			if (m_FirstClick)
 			{
@@ -74,6 +74,7 @@ namespace VoxelEngine {
 		else
 		{
 			m_FirstClick = true;
+			m_Input->HideCursor(false);
 		}
 
 		float FOVdeg = 100.0f;

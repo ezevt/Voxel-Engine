@@ -8,10 +8,9 @@
 
 namespace VoxelEngine {
     struct OctreeNode {
-        uint32_t ChildPtr;
-        uint8_t ChildIsEmpty;
-        uint8_t ChildIsLeaf;
-        uint32_t color;
+        uint32_t data;
+        // if leaf, data stores color
+        // if parent, data stores 16 bit child index, 8 bit child empty mask, 8 bit child leaf mask
     };
 
     class Renderer

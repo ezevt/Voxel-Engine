@@ -34,4 +34,12 @@ namespace VoxelEngine {
 	{
 		glfwSetCursorPos(m_Window->m_WindowHandle, x, y);
 	}
+
+	void Input::HideCursor(bool state)
+	{
+		if (state)
+			glfwSetInputMode(m_Window->m_WindowHandle, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+		else
+			glfwSetInputMode(m_Window->m_WindowHandle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+	}
 }

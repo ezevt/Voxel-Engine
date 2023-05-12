@@ -19,6 +19,8 @@ namespace VoxelEngine {
 		glm::vec2 GetMousePosition();
 
 		void SetMousePosition(uint32_t x, uint32_t y);
+
+		void HideCursor(bool state);
 	private:
 		Window* m_Window;
 	};
