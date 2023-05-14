@@ -5,24 +5,24 @@
 #include "Shader.h"
 #include "engine/core/Base.h"
 #include "DebugCamera.h"
+#include "Octree.h"
 
 namespace VoxelEngine {
-    struct OctreeNode {
-        uint32_t data;
-        // if leaf, data stores color
-        // if parent, data stores 16 bit child index, 8 bit child empty mask, 8 bit child leaf mask
-    };
-
     class Renderer
     {
     public:
         Renderer();
         ~Renderer();
 
+        void CreateOctree(std::vector<uint32_t>& nodes) { m_Octree = CreateRef<Octree>(nodes, m_ScreenShader); }
+
         void Render(const glm::mat4& cameraView, const glm::mat4& cameraProjection, const glm::vec2& screenSize);
 
+        const Ref<Shader>& GetShader() const { return m_ScreenShader; }
+
     private:
-        Ref<Shader> screenShader;
+        Ref<Shader> m_ScreenShader;
+        Ref<Octree> m_Octree;
 
         uint32_t m_VBO;
         uint32_t m_VAO;
