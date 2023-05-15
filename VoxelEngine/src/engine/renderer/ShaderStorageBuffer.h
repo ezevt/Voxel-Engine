@@ -4,11 +4,13 @@
 #include "engine/renderer/Shader.h";
 
 namespace VoxelEngine {
-	class ShaderStorageBlock
+	class ShaderStorageBuffer
 	{
 	public:
-		ShaderStorageBlock(Ref<Shader>& shader, const std::string& name, uint32_t binding, void* data, size_t size);
-		~ShaderStorageBlock();
+		ShaderStorageBuffer(uint32_t binding);
+		~ShaderStorageBuffer();
+
+		void SetData(void* data, size_t size);
 
 		void Bind();
 		void Unbind();

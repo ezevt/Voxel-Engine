@@ -14,15 +14,12 @@ namespace VoxelEngine {
         Renderer();
         ~Renderer();
 
-        void CreateOctree(std::vector<uint32_t>& nodes) { m_Octree = CreateRef<Octree>(nodes, m_ScreenShader); }
-
-        void Render(const glm::mat4& cameraView, const glm::mat4& cameraProjection, const glm::vec2& screenSize);
+        void Render(const glm::mat4& cameraView, const glm::mat4& cameraProjection, const glm::vec2& screenSize, Ref<Octree> octree = nullptr);
 
         const Ref<Shader>& GetShader() const { return m_ScreenShader; }
 
     private:
         Ref<Shader> m_ScreenShader;
-        Ref<Octree> m_Octree;
 
         uint32_t m_VBO;
         uint32_t m_VAO;

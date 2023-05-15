@@ -12,7 +12,7 @@ namespace VoxelEngine {
 	class DebugCamera
 	{
 	public:
-		DebugCamera(Input* input);
+		DebugCamera(Ref<Input>& input);
 
 		void Update(float ts, uint32_t width, uint32_t height);
 
@@ -27,7 +27,7 @@ namespace VoxelEngine {
 		bool m_FirstClick = true;
 		float m_Speed;
 
-		Input* m_Input;
+		Ref<Input>& m_Input;
 
 		glm::vec3 m_Orientation = glm::vec3(0.0f, 0.0f, -1.0f);
 		glm::vec3 m_Up = glm::vec3(0.0f, 1.0f, 0.0f);

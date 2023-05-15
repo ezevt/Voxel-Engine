@@ -3,9 +3,9 @@
 #include "GLFW/glfw3.h"
 
 namespace VoxelEngine {
-	Input::Input(Window* window)
+	Input::Input(Ref<Window>& window)
+		: m_Window(window)
 	{
-		m_Window = window;
 	}
 
 	Input::~Input()

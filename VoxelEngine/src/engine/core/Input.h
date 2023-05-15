@@ -10,7 +10,7 @@ namespace VoxelEngine {
 	class Input
 	{
 	public:
-		Input(Window* window);
+		Input(Ref<Window>& window);
 		~Input();
 
 		bool IsKeyPressed(KeyCode key);
@@ -22,6 +22,6 @@ namespace VoxelEngine {
 
 		void HideCursor(bool state);
 	private:
-		Window* m_Window;
+		Ref<Window>& m_Window;
 	};
 }

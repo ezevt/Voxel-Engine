@@ -53,14 +53,14 @@ namespace VoxelEngine {
         glDeleteBuffers(1, &m_EBO);
     }
 
-    void Renderer::Render(const glm::mat4& cameraView, const glm::mat4& cameraProjection, const glm::vec2& screenSize)
+    void Renderer::Render(const glm::mat4& cameraView, const glm::mat4& cameraProjection, const glm::vec2& screenSize, Ref<Octree> octree)
     {
         glClearColor(0.1, 0.3, 0.2, 1.0);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        if (!m_Octree) return;
+        if (!octree) return;
 
-        m_Octree->BindStorage();
+        octree->BindStorage();
 
         m_ScreenShader->Bind();
         m_ScreenShader->SetMat4("u_CameraView", cameraView);
@@ -71,6 +71,6 @@ namespace VoxelEngine {
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-        m_Octree->UnbindStorage();
+        octree->UnbindStorage();
     }
 }

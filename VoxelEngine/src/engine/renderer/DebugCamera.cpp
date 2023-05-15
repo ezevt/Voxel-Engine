@@ -3,7 +3,7 @@
 #include "engine/core/Log.h"
 
 namespace VoxelEngine {
-	DebugCamera::DebugCamera(Input* input)
+	DebugCamera::DebugCamera(Ref<Input>& input)
 		: m_Input(input)
 	{
 	}
