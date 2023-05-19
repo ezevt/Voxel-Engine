@@ -108,7 +108,7 @@ vec4 trace(Ray ray, inout Hit hit) {
 
             if (!BBoxIntersect(minBox, maxBox, ray, hit)){
                 if(!is_leaf){
-                   accumulated_offset +=1u;
+                   accumulated_offset += 1u;
                 }
                 continue;
             }
@@ -124,10 +124,13 @@ vec4 trace(Ray ray, inout Hit hit) {
             }
         }
     }
+
+    hit.p = ray.o + ray.d*minDist;
+
     if (minDist == -1)
         return f;
     else
-	    return f/(minDist*2);
+	    return f/(minDist/2);
 }
 
 void main()
@@ -153,5 +156,5 @@ void main()
 
     if (color.a < 0.01) discard;
 
-    o_Color = vec4(color.xyz, 1.0);
+    o_Color = vec4(hit.p, 1.0);
 }

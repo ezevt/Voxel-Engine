@@ -1,6 +1,6 @@
 #pragma once
 
-#include "engine/core/Base.h"
+#include "engine/core/Base.h";
 #include "engine/renderer/Shader.h";
 
 namespace VoxelEngine {
