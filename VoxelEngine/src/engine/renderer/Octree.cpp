@@ -44,7 +44,47 @@ namespace VoxelEngine {
 	{
 		m_Nodes.clear();
 
-		PushRandomNode(lod, 1);
+		// TODO: fix crash due to stack overflow
+
+		std::array<bool, 8> emptyMask = { false, false, false, false, false, false, false, false };
+		std::array<bool, 8> leafMask = { false, false, false, false, false, false, false, false };
+
+		for (int i = 0; i < 8; i++)
+		{
+			int state = (int)round((float)rand() / RAND_MAX * 3.0f);
+		
+			if (state == 0)
+			{
+				emptyMask[i] = false;
+				leafMask[i] = false;
+			}
+			else if (state == 1)
+			{
+				if (1 != lod) continue;
+
+				emptyMask[i] = true;
+				leafMask[i] = true;
+			}
+			else
+			{
+				if (lod == 1) continue;
+		
+				emptyMask[i] = true;
+				leafMask[i] = false;
+			}
+		}
+
+		PushNode(0, emptyMask, leafMask);
+		PushRandomBlock(0, lod, 2);
+
+		//for (int i = 0; i < m_Nodes.size(); i++)
+		//{
+		//	std::string str = std::bitset<32>(m_Nodes[i]).to_string();
+		//	str.insert(0, ": ");
+		//	str.insert(0, std::to_string(i));
+		//	ENGINE_TRACE(str);
+		//}
+
 		m_StorageBlock->SetData(m_Nodes.data(), m_Nodes.size() * sizeof(uint32_t));
 	}
 
@@ -75,7 +115,7 @@ namespace VoxelEngine {
 
 		for (int i = 0; i < 8; i++)
 		{
-			mask[i] = (childMask & (1 << i)) == 0;
+			mask[i] = (childMask & (1 << (7 - i))) != 0;
 		}
 
 		return mask;
@@ -89,63 +129,93 @@ namespace VoxelEngine {
 
 		for (int i = 0; i < 8; i++)
 		{
-			mask[i] = (leafMask & (1 << i)) == 0;
+			mask[i] = (leafMask & (1 << (7 - i))) != 0;
 		}
 
 		return mask;
 	}
 
-	int Octree::PushRandomNode(uint32_t maxLod, uint32_t lod)
+	void Octree::SetChildPtr(int index, uint16_t ptr)
 	{
-		std::array<bool, 8> emptyMask({ false, false, false, false, false, false, false, false });
-		std::array<bool, 8> leafMask ({ false, false, false, false, false, false, false, false });
+		uint32_t node = m_Nodes[index];
+		node = node & 0x0000FFFF;
+		node |= (ptr << 16);
+		m_Nodes[index] = node;
+	}
 
-		uint32_t nodeIndex = m_Nodes.size();
-		uint32_t childIndex = m_Nodes.size()+1;
+	void Octree::PushRandomBlock(int parentIndex, uint32_t maxLod, uint32_t lod)
+	{
+		std::array<bool, 8> parentEmptyMask = GetChildEmptyMask(parentIndex);
+		std::array<bool, 8> parentLeafMask = GetChildLeafMask(parentIndex);
 
-		for (int i = 0; i < 8; i++)
-		{
-			int state = (int)round((float)rand() / RAND_MAX * 3.0f);
-
-			if (state == 0)
-			{
-				emptyMask[i] = false;
-				leafMask[i] = false;
-			}
-			else if (state == 1)
-			{
-				emptyMask[i] = true;
-				leafMask[i] = true;
-			}
-			else
-			{
-				if (maxLod == lod) continue;
-
-				emptyMask[i] = true;
-				leafMask[i] = false;
-			}
-		}
-
-		PushNode(childIndex, emptyMask, leafMask);
+		uint16_t blockIndex = m_Nodes.size();
 
 		for (int i = 0; i < 8; i++)
 		{
-			int state = (int)round((float)rand() / RAND_MAX * 3.0f);
-
-			if (emptyMask[i] == true)
+			if (parentEmptyMask[i] == true)
 			{
-				if (leafMask[i] == false)
+				if (parentLeafMask[i] == false)
 				{
-					PushRandomNode(maxLod, lod + 1);
+					std::array<bool, 8> emptyMask = { false, false, false, false, false, false, false, false };
+					std::array<bool, 8> leafMask = { false, false, false, false, false, false, false, false };
+
+					for (int i = 0; i < 8; i++)
+					{
+						int state = (int)round((float)rand() / RAND_MAX * 3.0f);
+
+						if (state == 0)
+						{
+							emptyMask[i] = false;
+							leafMask[i] = false;
+						}
+						else if (state == 1)
+						{
+							if (lod != maxLod)
+							{
+								emptyMask[i] = true;
+								leafMask[i] = false;
+								continue;
+							}
+							emptyMask[i] = true;
+							leafMask[i] = true;
+						}
+						else
+						{
+							if (lod == maxLod)
+							{
+								emptyMask[i] = true;
+								leafMask[i] = true;
+								continue;
+							}
+
+							emptyMask[i] = true;
+							leafMask[i] = false;
+						}
+					}
+
+					PushNode(0, emptyMask, leafMask);
 				}
 				else
 				{
-					//m_Nodes.push_back(rand());
+					PushNode((uint32_t)rand() * 2);
 				}
 			}
 		}
 
-		return 0;
+		SetChildPtr(parentIndex, blockIndex);
+
+		int accumulatedOffset = 0;
+		for (int i = 0; i < 8; i++)
+		{
+			if (parentEmptyMask[i] == true)
+			{
+				if (parentLeafMask[i] == false)
+				{
+					PushRandomBlock(blockIndex + accumulatedOffset, maxLod, lod+1);
+				}
+				accumulatedOffset++;
+			}
+		}
 	}
 
 	int Octree::PushNode(uint16_t ptr, std::array<bool, 8>& emptyMask, std::array<bool, 8>& leafMask)
@@ -157,9 +227,14 @@ namespace VoxelEngine {
 			node |= (emptyMask[i] << (15 - i));
 			node |= (leafMask[i] << (7 - i));
 		}
-		
+
 		m_Nodes.push_back(node);
 		return (int)m_Nodes.size() - 1;
+	}
 
+	int Octree::PushNode(uint32_t data)
+	{
+		m_Nodes.push_back(data);
+		return m_Nodes.size() - 1;
 	}
 }

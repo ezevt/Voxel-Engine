@@ -65,6 +65,34 @@ bool BBoxIntersect(const vec3 boxMin, const vec3 boxMax, const Ray r, out Hit hi
 	return t1 > max(t0, 0.0);
 }
 
+uint NextRandom(inout uint state)
+{
+	state = state * 747796405 + 2891336453;
+	uint result = ((state >> ((state >> 28) + 4)) ^ state) * 277803737;
+	result = (result >> 22) ^ result;
+	return result;
+}
+
+float RandomValue(inout uint state)
+{
+	return NextRandom(state) / 4294967295.0; // 2^32 - 1
+}
+
+float RandomValueNormalDistribution(inout uint state)
+{
+	float theta = 2 * 3.1415926 * RandomValue(state);
+	float rho = sqrt(-2 * log(RandomValue(state)));
+	return rho * cos(theta);
+}
+
+vec3 RandomDirection(inout uint state)
+{
+	float x = RandomValueNormalDistribution(state);
+	float y = RandomValueNormalDistribution(state);
+	float z = RandomValueNormalDistribution(state);
+	return normalize(vec3(x, y, z));
+}
+
 vec4 trace(Ray ray, inout Hit hit) {
 	vec3 center = vec3(0.0f);
     float scale = 1.0f;
@@ -76,7 +104,7 @@ vec4 trace(Ray ray, inout Hit hit) {
 		vec3 center;
 		float scale;
 	};
-    Stack stack[10];
+    Stack stack[15];
     int stackPos = 1;
     if (!BBoxIntersect(minBox, maxBox, ray, hit)) return f;
     uint index = 0u;
@@ -95,8 +123,8 @@ vec4 trace(Ray ray, inout Hit hit) {
         uint voxel_leaf_mask = voxel_node & 0x000000FFu;
         uint accumulated_offset = 0u;
         for (uint i = 0u; i < 8u; ++i) {
-            bool empty = (voxel_child_mask & (1u << i)) == 0u;
-            bool is_leaf = (voxel_leaf_mask & (1u << i)) != 0u;
+            bool empty = (voxel_child_mask & (1u << (7 - i))) == 0u;
+            bool is_leaf = (voxel_leaf_mask & (1u << (7 - i))) != 0u;
             if (empty){ //empty
                 continue;
             }
@@ -107,17 +135,17 @@ vec4 trace(Ray ray, inout Hit hit) {
             
 
             if (!BBoxIntersect(minBox, maxBox, ray, hit)){
-                if(!is_leaf){
-                   accumulated_offset += 1u;
-                }
+                accumulated_offset+=1u;
                 continue;
             }
             if (is_leaf){ //not empty, but a leaf
                 if (minDist == -1 || minDist > hit.tmin)
                 {
-                    f = vec4(1.0f,0.0f,0.0f,1.0f);
+                    uint col = voxels[voxel_group_offset+accumulated_offset];
+                    f = vec4(unpackUnorm4x8(col).xyz, 1.0f);
                     minDist = hit.tmin;
                 }
+                accumulated_offset+=1u;
             } else { //not empty and not a leaf
             	stack[stackPos++] = Stack(voxel_group_offset+accumulated_offset, new_center, scale*0.5f   );
                 accumulated_offset+=1u;
@@ -125,12 +153,9 @@ vec4 trace(Ray ray, inout Hit hit) {
         }
     }
 
-    hit.p = ray.o + ray.d*minDist;
+    hit.p = ray.o + ray.d*minDist*0.99;
 
-    if (minDist == -1)
-        return f;
-    else
-	    return f/(minDist/2);
+    return f;
 }
 
 void main()
@@ -141,6 +166,8 @@ void main()
 	vec4 rayEye = inverse(u_CameraProjection) * rayClip;
 	rayEye = vec4(rayEye.xy, -1.0, 0.0);
 	vec3 rayWorld = (inverse(u_CameraView) * rayEye).xyz;
+
+    uint randomState = int(gl_FragCoord.y * u_ScreenSize.x + gl_FragCoord.x);
 
 	vec3 rayDir = normalize(rayWorld); 
 	vec3 rayOrigin = vec3(inverse(u_CameraView)[3]);
@@ -156,5 +183,5 @@ void main()
 
     if (color.a < 0.01) discard;
 
-    o_Color = vec4(hit.p, 1.0);
+    o_Color = vec4(color.rgb, 1.0);
 }

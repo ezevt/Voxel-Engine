@@ -19,13 +19,15 @@ namespace VoxelEngine {
 		void UnbindStorage();
 
 		int PushNode(uint16_t ptr, std::array<bool, 8>& emptyMask, std::array<bool, 8>& leafMask);
+		int PushNode(uint32_t data);
 	private:
 		int GetChildPtr(int index);
 		std::array<bool, 8> GetChildEmptyMask(int index);
 		std::array<bool, 8> GetChildLeafMask(int index);
 
-		int PushRandomNode(uint32_t maxLod, uint32_t lod);
+		void SetChildPtr(int index, uint16_t ptr);
 
+		void PushRandomBlock(int parentIndex, uint32_t maxLod, uint32_t lod);
 	private:
 		Ref<ShaderStorageBuffer> m_StorageBlock;
 		std::vector<uint32_t> m_Nodes;
