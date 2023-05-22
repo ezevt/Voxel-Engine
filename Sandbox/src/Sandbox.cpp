@@ -29,6 +29,8 @@ int main()
 		float timeStep = (currentTime - lastFrameTime);
 		lastFrameTime = currentTime;
 
+		ENGINE_INFO(1.0f / timeStep);
+
 		auto windowSize = window->GetSize();
 		camera->Update(timeStep, windowSize.x, windowSize.y);
 
