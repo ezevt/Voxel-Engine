@@ -14,7 +14,7 @@ namespace VoxelEngine {
         Renderer();
         ~Renderer();
 
-        void Render(const glm::mat4& cameraView, const glm::mat4& cameraProjection, const glm::vec2& screenSize, Ref<Octree> octree = nullptr);
+        void Render(const glm::mat4& cameraView, const glm::mat4& cameraProjection, Ref<Window> window, Ref<Octree> octree = nullptr);
 
         const Ref<Shader>& GetShader() const { return m_ScreenShader; }
 

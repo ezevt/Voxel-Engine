@@ -18,6 +18,7 @@ out vec4 o_Color;
 uniform vec2 u_ScreenSize;
 uniform mat4 u_CameraView;
 uniform mat4 u_CameraProjection;
+uniform float u_Time;
 
 layout (std430, binding = 0) readonly buffer Octree
 {
@@ -46,7 +47,6 @@ struct Ray
 struct Hit
 {
 	vec3 p;
-	vec3 n;
 	float tmin;
 	float tmax;
 	vec3 minBox;
@@ -75,20 +75,20 @@ vec3 CalculateBoxNormal(const vec3 hitPoint, const vec3 boxMin, const vec3 boxMa
     vec3 normalizedToCenter = normalize(toCenter);
     vec3 absNormalizedToCenter = abs(normalizedToCenter);
     int maxAxis = 0;
-float maxComponent = absNormalizedToCenter.x;
+    float maxComponent = absNormalizedToCenter.x;
 
-if (absNormalizedToCenter.y > maxComponent)
-{
-    maxAxis = 1;
-    maxComponent = absNormalizedToCenter.y;
-}
+    if (absNormalizedToCenter.y > maxComponent)
+    {
+        maxAxis = 1;
+        maxComponent = absNormalizedToCenter.y;
+    }
 
-if (absNormalizedToCenter.z > maxComponent)
-{
-    maxAxis = 2;
-    maxComponent = absNormalizedToCenter.z;
-}
-normal = vec3(maxAxis == 0 ? normalizedToCenter.x : 0.0,
+    if (absNormalizedToCenter.z > maxComponent)
+    {
+        maxAxis = 2;
+        maxComponent = absNormalizedToCenter.z;
+    }
+    normal = vec3(maxAxis == 0 ? normalizedToCenter.x : 0.0,
               maxAxis == 1 ? normalizedToCenter.y : 0.0,
               maxAxis == 2 ? normalizedToCenter.z : 0.0);
 	return normalize(normal);
@@ -124,11 +124,11 @@ vec3 RandomDirection(inout uint state)
 
 vec4 trace(Ray ray, inout Hit hit) {
     hit.tmin = -1.0;
-	vec3 center = vec3(0.0f);
-    float scale = 1.0f;
+	vec3 center = vec3(0.0);
+    float scale = 1.0;
 	vec3 minBox = center - scale;
 	vec3 maxBox = center + scale;
-	vec4 f = vec4(0.0f);
+	vec4 f = vec4(0.0);
     struct Stack {
 		uint index;
 		vec3 center;
@@ -140,7 +140,7 @@ vec4 trace(Ray ray, inout Hit hit) {
     float t1;
     if (!BBoxIntersect(minBox, maxBox, ray, t0, t1)) return f;
     uint index = 0u;
-    scale *= 0.5f;
+    scale *= 0.5;
     stack[0] = Stack( 0u, center, scale);
 
     while(stackPos-- > 0) {
@@ -174,22 +174,20 @@ vec4 trace(Ray ray, inout Hit hit) {
                 if (hit.tmin == -1 || hit.tmin > tmin)
                 {
                     uint col = voxels[voxel_group_offset+accumulated_offset];
-                    f = vec4(unpackUnorm4x8(col).xyz, 1.0f);
+                    f = vec4(unpackUnorm4x8(col).xyz, 1.0);
                     hit.tmin = tmin;
                     hit.tmax = tmax;
 					hit.minBox = minBox;
 					hit.maxBox = maxBox;
                 }
-                accumulated_offset+=1u;
             } else { //not empty and not a leaf
-            	stack[stackPos++] = Stack(voxel_group_offset+accumulated_offset, new_center, scale*0.5f   );
-                accumulated_offset+=1u;
+            	stack[stackPos++] = Stack(voxel_group_offset+accumulated_offset, new_center, scale*0.5);
             }
+            accumulated_offset+=1u;
         }
     }
 
-    hit.p = ray.o + ray.d * hit.tmin;
-	hit.n = CalculateBoxNormal(hit.p, hit.minBox, hit.maxBox);
+    hit.p = ray.o + ray.d * hit.tmin*0.999;
 
     return f;
 }
@@ -203,7 +201,7 @@ void main()
 	rayEye = vec4(rayEye.xy, -1.0, 0.0);
 	vec3 rayWorld = (inverse(u_CameraView) * rayEye).xyz;
 
-    uint randomState = int(gl_FragCoord.y * u_ScreenSize.x + gl_FragCoord.x);
+    uint randomState = int((gl_FragCoord.y * u_ScreenSize.x + gl_FragCoord.x) * u_Time);
 
 	vec3 rayDir = normalize(rayWorld); 
 	vec3 rayOrigin = vec3(inverse(u_CameraView)[3]);
@@ -219,17 +217,19 @@ void main()
 
     if (color.a < EPSILON) discard;
 
+    vec3 normal = CalculateBoxNormal(hit.p, hit.minBox, hit.maxBox);
+
 	Ray aoRay;
     Hit aoHit;
 
     float ao = 0;
 
-    for (int i = 0; i < 2; i++)
+    for (int i = 0; i < 3; i++)
     {
         aoRay.o = hit.p;
 
         vec3 aoDir = RandomDirection(randomState);
-        if (dot(aoDir, hit.n) >= 0) aoDir *= -1;
+        if (dot(aoDir, normal) >= 0) aoDir *= -1;
 
         aoRay.d = aoDir;
         aoRay.invDir = 1.0/aoDir;
@@ -239,7 +239,7 @@ void main()
         if (aoResult.a < EPSILON) ao += 1;
     }
 
-    ao /= 2;
+    ao /= 3;
 
     color *= ao;
 

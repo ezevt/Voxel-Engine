@@ -197,7 +197,9 @@ namespace VoxelEngine {
 				}
 				else
 				{
-					PushNode((uint32_t)rand() * 2);
+					uint32_t color = ((uint32_t)rand()) & 0x00ffffff;
+
+					PushNode(color | 0xff000000);
 				}
 			}
 		}
