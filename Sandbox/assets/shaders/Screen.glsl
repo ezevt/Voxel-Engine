@@ -27,15 +27,16 @@ layout (std430, binding = 0) readonly buffer Octree
 
 #define EPSILON 0.01
 
-const vec3 PPP = vec3(1, 1, 1);
-const vec3 PNP = vec3(1, -1, 1);
-const vec3 PNN = vec3(1, -1, -1);
-const vec3 NPN = vec3(-1, 1, -1);
-const vec3 NNN = vec3(-1, -1, -1);
-const vec3 NNP = vec3(-1, -1, 1);
-const vec3 NPP = vec3(-1, 1, 1);
-const vec3 PPN = vec3(1, 1, -1);
-const vec3 POS[8] = vec3[8](PNN, PNP, PPN, PPP, NNN, NNP, NPN, NPP);
+const vec3 POS[8] = {
+vec3(1, -1, -1),
+vec3(1, -1, 1),
+vec3(1, 1, -1),
+vec3(1, 1, 1),
+vec3(-1, -1, -1),
+vec3(-1, -1, 1),
+vec3(-1, 1, -1),
+vec3(-1, 1, 1)
+};
 
 struct Ray
 {
