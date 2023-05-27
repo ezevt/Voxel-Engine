@@ -179,7 +179,7 @@ vec4 trace(Ray ray, inout Hit hit) {
     int stackPos = 1;
     float t0;
     float t1;
-    if (!BBoxIntersect(minBox, maxBox, ray, 0, 0)) return f;
+    if (!BBoxIntersect(minBox, maxBox, ray, t0, t1)) return f;
     uint index = 0u;
     scale *= 0.5;
     stack[0] = Stack( 0u, center, scale);
