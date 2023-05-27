@@ -179,7 +179,7 @@ vec4 trace(Ray ray, inout Hit hit) {
     int stackPos = 1;
     float t0;
     float t1;
-    if (!BBoxIntersect(minBox, maxBox, ray, t0, t1)) return f;
+    if (!BBoxIntersect(minBox, maxBox, ray, 0, 0)) return f;
     uint index = 0u;
     scale *= 0.5;
     stack[0] = Stack( 0u, center, scale);
@@ -188,25 +188,25 @@ vec4 trace(Ray ray, inout Hit hit) {
         center = stack[stackPos].center;
 		index = stack[stackPos].index;
 		scale = stack[stackPos].scale;
-        uint voxel_node = voxels[index];
-        uint voxel_group_offset = voxel_node >> 16;
-        uint voxel_child_mask = (voxel_node & 0x0000FF00u) >> 8u;
-        uint voxel_leaf_mask = voxel_node & 0x000000FFu;
+        uint voxelNode = voxels[index];
+        uint voxelGroupOffset = voxelNode >> 16;
+        uint voxelChildMask = (voxelNode & 0x0000FF00u) >> 8u;
+        uint voxelLeafMask = voxelNode & 0x000000FFu;
 
         uint order[8] = uint[8](0, 1, 2, 3, 4, 5, 6, 7);
         
         for (uint i = 0u; i < 8u; ++i) {
             uint loc = order[i];
 
-            bool empty = (voxel_child_mask & (1u << (7 - loc))) == 0u;
-            bool is_leaf = (voxel_leaf_mask & (1u << (7 - loc))) != 0u;
+            bool empty = (voxelChildMask & (1u << (7 - loc))) == 0u;
+            bool isLeaf = (voxelLeafMask & (1u << (7 - loc))) != 0u;
             if (empty){ //empty
                 continue;
             }
             
-            vec3 new_center = center + scale * POS[loc];
-            vec3 minBox = new_center - scale;
-            vec3 maxBox = new_center + scale;
+            vec3 newCenter = center + scale * POS[loc];
+            vec3 minBox = newCenter - scale;
+            vec3 maxBox = newCenter + scale;
             
             float tmin;
             float tmax;
@@ -214,10 +214,10 @@ vec4 trace(Ray ray, inout Hit hit) {
             if (!BBoxIntersect(minBox, maxBox, ray, tmin, tmax)){
                 continue;
             }
-            if (is_leaf){ //not empty, but a leaf
+            if (isLeaf){ //not empty, but a leaf
                 if (hit.tmin == -1 || hit.tmin > tmin)
                 {
-                    uint col = voxels[voxel_group_offset+loc];
+                    uint col = voxels[voxelGroupOffset+loc];
                     f = vec4(unpackUnorm4x8(col).xyz, 1.0);
                     hit.tmin = tmin;
                     hit.tmax = tmax;
@@ -225,7 +225,7 @@ vec4 trace(Ray ray, inout Hit hit) {
 					hit.maxBox = maxBox;
                 }
             } else { //not empty and not a leaf
-            	stack[stackPos++] = Stack(voxel_group_offset+loc, new_center, scale*0.5);
+            	stack[stackPos++] = Stack(voxelGroupOffset+loc, newCenter, scale*0.5);
             }
         }
     }
