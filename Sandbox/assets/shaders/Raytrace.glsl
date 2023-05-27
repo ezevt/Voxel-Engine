@@ -4,7 +4,6 @@
 layout (location = 0) in vec3 a_Position;
 layout (location = 1) in vec3 a_Color;
 
-
 void main()
 {
     gl_Position = vec4(a_Position, 1.0);
@@ -15,14 +14,17 @@ void main()
 
 layout (location = 0) out vec4 o_Color;
 
-uniform vec2 u_ScreenSize;
-uniform mat4 u_CameraView;
-uniform mat4 u_CameraProjection;
-uniform float u_Time;
-
-layout (std430, binding = 0) readonly buffer Octree
+layout (std140, binding = 0) uniform DefaultSettings
 {
-    uint voxels[];
+    uniform mat4 CameraProjection;
+    uniform mat4 CameraView;
+    uniform vec2 ScreenSize;
+    uniform float Time;
+};
+
+layout (std430, binding = 3) readonly buffer Octree
+{
+    uint Voxels[];
 };
 
 #define EPSILON 0.01
@@ -188,7 +190,7 @@ vec4 trace(Ray ray, inout Hit hit) {
         center = stack[stackPos].center;
 		index = stack[stackPos].index;
 		scale = stack[stackPos].scale;
-        uint voxelNode = voxels[index];
+        uint voxelNode = Voxels[index];
         uint voxelGroupOffset = voxelNode >> 16;
         uint voxelChildMask = (voxelNode & 0x0000FF00u) >> 8u;
         uint voxelLeafMask = voxelNode & 0x000000FFu;
@@ -217,7 +219,7 @@ vec4 trace(Ray ray, inout Hit hit) {
             if (isLeaf){ //not empty, but a leaf
                 if (hit.tmin == -1 || hit.tmin > tmin)
                 {
-                    uint col = voxels[voxelGroupOffset+loc];
+                    uint col = Voxels[voxelGroupOffset+loc];
                     f = vec4(unpackUnorm4x8(col).xyz, 1.0);
                     hit.tmin = tmin;
                     hit.tmax = tmax;
@@ -237,21 +239,21 @@ vec4 trace(Ray ray, inout Hit hit) {
 
 void main()
 {
-	vec2 uv = (gl_FragCoord.xy / u_ScreenSize) * 2.0 - 1.0;
+	vec2 uv = (gl_FragCoord.xy / ScreenSize) * 2.0 - 1.0;
 
     // Jitter for TAA
-    uint jitterSeed = uint(u_Time*1000.0);
+    uint jitterSeed = uint(Time*1000.0);
     uv += RandomDirection(jitterSeed).xy*0.001;
 
 	vec4 rayClip = vec4(uv, -1.0, 1.0);
-	vec4 rayEye = inverse(u_CameraProjection) * rayClip;
+	vec4 rayEye = inverse(CameraProjection) * rayClip;
 	rayEye = vec4(rayEye.xy, -1.0, 0.0);
-	vec3 rayWorld = (inverse(u_CameraView) * rayEye).xyz;
+	vec3 rayWorld = (inverse(CameraView) * rayEye).xyz;
 
-    uint randomState = int((gl_FragCoord.y * u_ScreenSize.x + gl_FragCoord.x) * u_Time);
+    uint randomState = int((gl_FragCoord.y * ScreenSize.x + gl_FragCoord.x) * Time);
 
 	vec3 rayDir = normalize(rayWorld); 
-	vec3 rayOrigin = vec3(inverse(u_CameraView)[3]);
+	vec3 rayOrigin = vec3(inverse(CameraView)[3]);
 
 	Ray ray;
 	Hit hit;

@@ -1,7 +1,5 @@
 #include "Window.h"
 
-#include "Log.h"
-
 namespace VoxelEngine {
 	static bool s_GLFWinitialized = false;
 

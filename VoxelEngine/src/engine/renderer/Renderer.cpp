@@ -7,7 +7,6 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "Renderer.h"
-#include "engine/core/Log.h"
 
 namespace VoxelEngine {
     Renderer::Renderer(Ref<Window> window)
@@ -55,6 +54,8 @@ namespace VoxelEngine {
 
         m_RaytraceShader = CreateRef<Shader>("assets/shaders/RayTrace.glsl");
         m_QuadShader = CreateRef<Shader>("assets/shaders/Quad.glsl");
+
+        m_SettingsUniformBuffer = CreateRef<UniformBuffer>(sizeof(DefaultSettings));
     }
 
     Renderer::~Renderer()
@@ -64,16 +65,25 @@ namespace VoxelEngine {
         glDeleteBuffers(1, &m_EBO);
     }
 
-    void Renderer::Render(const glm::mat4& cameraView, const glm::mat4& cameraProjection, Ref<Octree> octree, bool denoise)
+    void Renderer::Render(const glm::mat4& cameraView, const glm::mat4& cameraProjection, Ref<Octree> octree)
     {
         m_Framebuffer->Bind();
         glClearColor(0.1, 0.3, 0.2, 1.0);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        if (!octree) return;
-
         glm::vec2 screenSize = m_Window->GetSize();
         float time = m_Window->GetTime();
+
+        m_SettingsBuffer.CameraView = cameraView;
+        m_SettingsBuffer.CameraProjection = cameraProjection;
+        m_SettingsBuffer.ScreenSize = screenSize;
+        m_SettingsBuffer.Time = time;
+
+        m_SettingsUniformBuffer->SetData(&m_SettingsBuffer, sizeof(DefaultSettings));
+        m_SettingsUniformBuffer->Bind(0);
+
+        if (!octree) return;
+
 
         glm::vec2 fbSize = m_Framebuffer->GetSize();
         if (screenSize != fbSize)
@@ -83,7 +93,7 @@ namespace VoxelEngine {
 
         m_RaytraceShader->Bind();
 
-        octree->BindStorage();
+        octree->BindStorage(3);
 
         m_RaytraceShader->SetMat4("u_CameraView", cameraView);
         m_RaytraceShader->SetMat4("u_CameraProjection", cameraProjection);
@@ -108,7 +118,6 @@ namespace VoxelEngine {
         m_Framebuffer->BindAttachmentTexture(0, 0);
 
         m_QuadShader->SetInt("u_ColorTexture", 0);
-        m_QuadShader->SetInt("u_Denoise", denoise ? 1 : 0);
 
         glBindVertexArray(m_VAO);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);

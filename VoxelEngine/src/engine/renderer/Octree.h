@@ -15,7 +15,7 @@ namespace VoxelEngine {
 		void SampleSphere();
 		void SampleRandom(uint32_t lod = 5);
 
-		void BindStorage();
+		void BindStorage(uint32_t binding);
 		void UnbindStorage();
 
 		int PushNode(uint16_t ptr, std::array<bool, 8>& emptyMask, std::array<bool, 8>& leafMask);

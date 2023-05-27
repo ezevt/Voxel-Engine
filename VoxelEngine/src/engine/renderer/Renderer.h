@@ -3,6 +3,7 @@
 #include <glm/glm.hpp>
 
 #include "Shader.h"
+#include "UniformBuffer.h"
 #include "Framebuffer.h"
 #include "engine/core/Base.h"
 #include "DebugCamera.h"
@@ -15,7 +16,7 @@ namespace VoxelEngine {
         Renderer(Ref<Window> window);
         ~Renderer();
 
-        void Render(const glm::mat4& cameraView, const glm::mat4& cameraProjection, Ref<Octree> octree = nullptr, bool denoise = true);
+        void Render(const glm::mat4& cameraView, const glm::mat4& cameraProjection, Ref<Octree> octree = nullptr);
 
         const Ref<Shader>& GetShader() const { return m_RaytraceShader; }
 
@@ -29,5 +30,15 @@ namespace VoxelEngine {
         uint32_t m_VBO;
         uint32_t m_VAO;
         uint32_t m_EBO;
+
+        struct DefaultSettings
+        {
+            glm::mat4 CameraProjection;
+            glm::mat4 CameraView;
+            glm::vec2 ScreenSize;
+            float Time;
+        };
+        DefaultSettings m_SettingsBuffer;
+        Ref<UniformBuffer> m_SettingsUniformBuffer;
     };
 }

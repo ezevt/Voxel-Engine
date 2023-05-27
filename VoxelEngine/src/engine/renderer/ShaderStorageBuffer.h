@@ -7,12 +7,12 @@ namespace VoxelEngine {
 	class ShaderStorageBuffer
 	{
 	public:
-		ShaderStorageBuffer(uint32_t binding);
+		ShaderStorageBuffer();
 		~ShaderStorageBuffer();
 
 		void SetData(void* data, size_t size);
 
-		void Bind();
+		void Bind(uint32_t binding);
 		void Unbind();
 
 	private:

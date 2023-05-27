@@ -19,18 +19,18 @@ out vec4 o_Color;
 
 layout (location = 0) in vec2 o_UV;
 
-layout (location = 0) uniform sampler2D u_ColorTexture;
+layout (std140, binding = 0) uniform DefaultSettings
+{
+    uniform mat4 CameraProjection;
+    uniform mat4 CameraView;
+    uniform vec2 ScreenSize;
+    uniform float Time;
+};
 
-uniform int u_Denoise;
+uniform sampler2D u_ColorTexture;
 
 void main()
 {
-    if (u_Denoise == 0)
-    {
-        o_Color = texture(u_ColorTexture, o_UV);
-        return;
-    }
-    
     // TODO: Denoise
 
     o_Color = texture(u_ColorTexture, o_UV);

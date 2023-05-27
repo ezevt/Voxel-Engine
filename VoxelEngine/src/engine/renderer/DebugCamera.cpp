@@ -1,7 +1,5 @@
 #include "DebugCamera.h"
 
-#include "engine/core/Log.h"
-
 namespace VoxelEngine {
 	DebugCamera::DebugCamera(Ref<Input>& input)
 		: m_Input(input)

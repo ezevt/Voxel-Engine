@@ -1,6 +1,5 @@
 #include "Octree.h"
 
-#include "engine/core/Log.h"
 #include <bitset>
 
 namespace VoxelEngine {
@@ -17,13 +16,13 @@ namespace VoxelEngine {
 	Octree::Octree()
 		: m_Nodes(std::vector<uint32_t>())
 	{
-		m_StorageBlock = CreateRef<ShaderStorageBuffer>(0);
+		m_StorageBlock = CreateRef<ShaderStorageBuffer>();
 	}
 
 	Octree::Octree(std::vector<uint32_t>& nodes)
 		: m_Nodes(nodes)
 	{
-		m_StorageBlock = CreateRef<ShaderStorageBuffer>(0);
+		m_StorageBlock = CreateRef<ShaderStorageBuffer>();
 		m_StorageBlock->SetData(m_Nodes.data(), m_Nodes.size() * sizeof(uint32_t));
 
 		for (int i = 0; i < m_Nodes.size(); i++)
@@ -88,9 +87,9 @@ namespace VoxelEngine {
 		m_StorageBlock->SetData(m_Nodes.data(), m_Nodes.size() * sizeof(uint32_t));
 	}
 
-	void Octree::BindStorage()
+	void Octree::BindStorage(uint32_t binding)
 	{
-		m_StorageBlock->Bind();
+		m_StorageBlock->Bind(binding);
 	}
 
 	void Octree::UnbindStorage()

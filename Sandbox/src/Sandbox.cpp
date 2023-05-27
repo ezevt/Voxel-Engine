@@ -34,7 +34,7 @@ int main()
 		auto windowSize = window->GetSize();
 		camera->Update(timeStep, windowSize.x, windowSize.y);
 
-		renderer->Render(camera->GetViewMatrix(), camera->GetProjectionMatrix(), octree, !input->IsKeyPressed(Key::Q));
+		renderer->Render(camera->GetViewMatrix(), camera->GetProjectionMatrix(), octree);
 
 		window->Update();
 	}
