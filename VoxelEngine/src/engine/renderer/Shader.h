@@ -35,7 +35,5 @@ namespace VoxelEngine {
 		void compileErrors(uint32_t shader, const std::string& type);
 	private:
 		uint32_t m_RendererID;
-
-		friend class ShaderStorageBlock;
     };
 }

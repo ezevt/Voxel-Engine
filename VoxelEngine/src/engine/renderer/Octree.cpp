@@ -202,20 +202,22 @@ namespace VoxelEngine {
 					PushNode(color | 0xff000000);
 				}
 			}
+			else
+			{
+				PushNode(0);
+			}
 		}
 
 		SetChildPtr(parentIndex, blockIndex);
 
-		int accumulatedOffset = 0;
 		for (int i = 0; i < 8; i++)
 		{
 			if (parentEmptyMask[i] == true)
 			{
 				if (parentLeafMask[i] == false)
 				{
-					PushRandomBlock(blockIndex + accumulatedOffset, maxLod, lod+1);
+					PushRandomBlock(blockIndex + i, maxLod, lod+1);
 				}
-				accumulatedOffset++;
 			}
 		}
 	}

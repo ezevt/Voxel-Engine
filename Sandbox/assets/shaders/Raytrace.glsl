@@ -13,7 +13,7 @@ void main()
 #type fragment
 #version 460 core
 
-out vec4 o_Color;
+layout (location = 0) out vec4 o_Color;
 
 uniform vec2 u_ScreenSize;
 uniform mat4 u_CameraView;
@@ -26,6 +26,7 @@ layout (std430, binding = 0) readonly buffer Octree
 };
 
 #define EPSILON 0.01
+#define SAMPLES 2
 
 const vec3 POS[8] = {
 vec3(1, -1, -1),
@@ -123,6 +124,45 @@ vec3 RandomDirection(inout uint state)
 	return normalize(vec3(x, y, z));
 }
 
+uint[8] OrderOctantsByDistance(vec3 rayOrigin, vec3 parentCenter, float scale) {
+    const vec3 POS[8] = {
+        vec3(1, -1, -1),
+        vec3(1, -1, 1),
+        vec3(1, 1, -1),
+        vec3(1, 1, 1),
+        vec3(-1, -1, -1),
+        vec3(-1, -1, 1),
+        vec3(-1, 1, -1),
+        vec3(-1, 1, 1)
+    };
+
+    uint[8] indices = uint[8](0, 1, 2, 3, 4, 5, 6, 7);
+    float distancesSquared[8];
+
+    for (uint i = 0; i < 8; i++) {
+        vec3 diff = parentCenter + POS[i] * scale - rayOrigin;
+        distancesSquared[i] = dot(diff, diff);
+    }
+
+    // Shell sort the indices based on distances squared
+    uint gap = 4; // 8 / 2
+    while (gap > 0) {
+        for (uint i = gap; i < 8; i++) {
+            float tempDist = distancesSquared[indices[i]];
+            uint tempIndex = indices[i];
+            int j = int(i) - int(gap);
+            while (j >= 0 && distancesSquared[indices[j]] > tempDist) {
+                indices[uint(j + gap)] = indices[uint(j)];
+                j -= int(gap);
+            }
+            indices[uint(j + gap)] = tempIndex;
+        }
+        gap /= 2;
+    }
+
+    return indices;
+}
+
 vec4 trace(Ray ray, inout Hit hit) {
     hit.tmin = -1.0;
 	vec3 center = vec3(0.0);
@@ -152,15 +192,19 @@ vec4 trace(Ray ray, inout Hit hit) {
         uint voxel_group_offset = voxel_node >> 16;
         uint voxel_child_mask = (voxel_node & 0x0000FF00u) >> 8u;
         uint voxel_leaf_mask = voxel_node & 0x000000FFu;
-        uint accumulated_offset = 0u;
+
+        uint order[8] = uint[8](0, 1, 2, 3, 4, 5, 6, 7);
+        
         for (uint i = 0u; i < 8u; ++i) {
-            bool empty = (voxel_child_mask & (1u << (7 - i))) == 0u;
-            bool is_leaf = (voxel_leaf_mask & (1u << (7 - i))) != 0u;
+            uint loc = order[i];
+
+            bool empty = (voxel_child_mask & (1u << (7 - loc))) == 0u;
+            bool is_leaf = (voxel_leaf_mask & (1u << (7 - loc))) != 0u;
             if (empty){ //empty
                 continue;
             }
             
-            vec3 new_center = center + scale * POS[i];
+            vec3 new_center = center + scale * POS[loc];
             vec3 minBox = new_center - scale;
             vec3 maxBox = new_center + scale;
             
@@ -168,13 +212,12 @@ vec4 trace(Ray ray, inout Hit hit) {
             float tmax;
 
             if (!BBoxIntersect(minBox, maxBox, ray, tmin, tmax)){
-                accumulated_offset+=1u;
                 continue;
             }
             if (is_leaf){ //not empty, but a leaf
                 if (hit.tmin == -1 || hit.tmin > tmin)
                 {
-                    uint col = voxels[voxel_group_offset+accumulated_offset];
+                    uint col = voxels[voxel_group_offset+loc];
                     f = vec4(unpackUnorm4x8(col).xyz, 1.0);
                     hit.tmin = tmin;
                     hit.tmax = tmax;
@@ -182,9 +225,8 @@ vec4 trace(Ray ray, inout Hit hit) {
 					hit.maxBox = maxBox;
                 }
             } else { //not empty and not a leaf
-            	stack[stackPos++] = Stack(voxel_group_offset+accumulated_offset, new_center, scale*0.5);
+            	stack[stackPos++] = Stack(voxel_group_offset+loc, new_center, scale*0.5);
             }
-            accumulated_offset+=1u;
         }
     }
 
@@ -196,6 +238,10 @@ vec4 trace(Ray ray, inout Hit hit) {
 void main()
 {
 	vec2 uv = (gl_FragCoord.xy / u_ScreenSize) * 2.0 - 1.0;
+
+    // Jitter for TAA
+    uint jitterSeed = uint(u_Time*1000.0);
+    uv += RandomDirection(jitterSeed).xy*0.001;
 
 	vec4 rayClip = vec4(uv, -1.0, 1.0);
 	vec4 rayEye = inverse(u_CameraProjection) * rayClip;
@@ -225,7 +271,7 @@ void main()
 
     float ao = 0;
 
-    for (int i = 0; i < 3; i++)
+    for (int i = 0; i < SAMPLES; i++)
     {
         aoRay.o = hit.p;
 
@@ -240,7 +286,7 @@ void main()
         if (aoResult.a < EPSILON) ao += 1;
     }
 
-    ao /= 3;
+    ao /= SAMPLES;
 
     color *= ao;
 

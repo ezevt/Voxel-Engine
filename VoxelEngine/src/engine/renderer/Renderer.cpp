@@ -10,7 +10,8 @@
 #include "engine/core/Log.h"
 
 namespace VoxelEngine {
-    Renderer::Renderer()
+    Renderer::Renderer(Ref<Window> window)
+        : m_Window(window)
     {
         ENGINE_CORE_INFO("Initializing renderer");
 
@@ -43,7 +44,17 @@ namespace VoxelEngine {
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-        m_ScreenShader = CreateRef<Shader>("assets/shaders/Screen.glsl");
+        glm::vec2 windowSize = m_Window->GetSize();
+
+        FramebufferSpecification fbSpec;
+        fbSpec.Width = windowSize.x;
+        fbSpec.Height = windowSize.y;
+        fbSpec.Attachments = { FramebufferTextureFormat::RGBA8, FramebufferTextureFormat::Depth };
+
+        m_Framebuffer = CreateRef<Framebuffer>(fbSpec);
+
+        m_RaytraceShader = CreateRef<Shader>("assets/shaders/RayTrace.glsl");
+        m_QuadShader = CreateRef<Shader>("assets/shaders/Quad.glsl");
     }
 
     Renderer::~Renderer()
@@ -53,28 +64,56 @@ namespace VoxelEngine {
         glDeleteBuffers(1, &m_EBO);
     }
 
-    void Renderer::Render(const glm::mat4& cameraView, const glm::mat4& cameraProjection, Ref<Window> window, Ref<Octree> octree)
+    void Renderer::Render(const glm::mat4& cameraView, const glm::mat4& cameraProjection, Ref<Octree> octree, bool denoise)
     {
+        m_Framebuffer->Bind();
         glClearColor(0.1, 0.3, 0.2, 1.0);
         glClear(GL_COLOR_BUFFER_BIT);
 
         if (!octree) return;
 
-        glm::vec2 screenSize = window->GetSize();
-        float time = window->GetTime();
+        glm::vec2 screenSize = m_Window->GetSize();
+        float time = m_Window->GetTime();
+
+        glm::vec2 fbSize = m_Framebuffer->GetSize();
+        if (screenSize != fbSize)
+        {
+            m_Framebuffer->Resize(screenSize.x, screenSize.y);
+        }
+
+        m_RaytraceShader->Bind();
 
         octree->BindStorage();
 
-        m_ScreenShader->Bind();
-        m_ScreenShader->SetMat4("u_CameraView", cameraView);
-        m_ScreenShader->SetMat4("u_CameraProjection", cameraProjection);
-        m_ScreenShader->SetFloat2("u_ScreenSize", screenSize);
-        m_ScreenShader->SetFloat("u_Time", time);
+        m_RaytraceShader->SetMat4("u_CameraView", cameraView);
+        m_RaytraceShader->SetMat4("u_CameraProjection", cameraProjection);
+        m_RaytraceShader->SetFloat2("u_ScreenSize", screenSize);
+        m_RaytraceShader->SetFloat("u_Time", time);
 
         glBindVertexArray(m_VAO);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
         octree->UnbindStorage();
+
+        m_RaytraceShader->Unbind();
+
+        m_Framebuffer->Unbind();
+
+        glClearColor(0.1, 0.3, 0.2, 1.0);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        m_QuadShader->Bind();
+
+        m_Framebuffer->BindAttachmentTexture(0, 0);
+
+        m_QuadShader->SetInt("u_ColorTexture", 0);
+        m_QuadShader->SetInt("u_Denoise", denoise ? 1 : 0);
+
+        glBindVertexArray(m_VAO);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+        m_QuadShader->Unbind();
     }
 }

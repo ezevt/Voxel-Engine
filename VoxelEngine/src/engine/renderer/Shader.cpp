@@ -86,7 +86,7 @@ namespace VoxelEngine {
 
 	void Shader::Unbind() const
 	{
-		glDeleteProgram(0);
+		glUseProgram(0);
 	}
 
 	void Shader::SetInt(const std::string& name, int value)
