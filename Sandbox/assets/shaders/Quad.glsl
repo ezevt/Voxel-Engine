@@ -29,9 +29,33 @@ layout (std140, binding = 0) uniform DefaultSettings
 
 uniform sampler2D u_ColorTexture;
 
+float sigmaSpatial = 0.01;
+float sigmaIntensity = 0.01;
+
 void main()
 {
-    // TODO: Denoise
+    vec2 texelSize = 1.0 / ScreenSize;
+    vec3 centerPixel = texture(u_ColorTexture, o_UV).rgb;
+    vec3 outputColor = vec3(0.0);
+    float totalWeight = 0.0;
 
-    o_Color = texture(u_ColorTexture, o_UV);
+    for (int i = -5; i <= 5; i++)
+    {
+        for (int j = -5; j <= 5; j++)
+        {
+            vec2 offset = vec2(float(i), float(j)) * texelSize;
+            vec3 currentPixel = texture(u_ColorTexture, o_UV + offset).rgb;
+            
+            float spatialDistance = length(vec2(i, j)) * texelSize.x;
+            float intensityDistance = length(centerPixel - currentPixel);
+            
+            float weight = exp(-(spatialDistance * spatialDistance) / (2.0 * sigmaSpatial * sigmaSpatial));
+            weight *= exp(-(intensityDistance * intensityDistance) / (2.0 * sigmaIntensity * sigmaIntensity));
+            
+            outputColor += currentPixel * weight;
+            totalWeight += weight;
+        }
+    }
+
+    o_Color = vec4(outputColor.rgb/totalWeight, 1.0);
 }

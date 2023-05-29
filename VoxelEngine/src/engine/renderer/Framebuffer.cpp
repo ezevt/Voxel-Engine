@@ -5,40 +5,61 @@
 namespace VoxelEngine {
 
     namespace Utils {
-        static void CreateTextures(uint32_t* outID, uint32_t count)
+        static GLenum TextureTarget(bool multisampled)
         {
-            glCreateTextures(GL_TEXTURE_2D, count, outID);
+            return multisampled ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D;
         }
 
-        static void BindTexture(uint32_t id)
+        static void CreateTextures(bool multisampled, uint32_t* outID, uint32_t count)
         {
-            glBindTexture(GL_TEXTURE_2D, id);
+            glCreateTextures(TextureTarget(multisampled), count, outID);
         }
 
-        static void AttachColorTexture(uint32_t id, GLenum internalFormat, GLenum format, uint32_t width, uint32_t height, int index)
+        static void BindTexture(bool multisampled, uint32_t id)
         {
-            glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format, GL_UNSIGNED_BYTE, nullptr);
-
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + index, GL_TEXTURE_2D, id, 0);
+            glBindTexture(TextureTarget(multisampled), id);
         }
 
-        static void AttachDepthTexture(uint32_t id, GLenum format, GLenum attachmentType, uint32_t width, uint32_t height)
+        static void AttachColorTexture(uint32_t id, int samples, GLenum internalFormat, GLenum format, uint32_t width, uint32_t height, int index)
         {
-            glTexStorage2D(GL_TEXTURE_2D, 1, format, width, height);
+            bool multisampled = samples > 1;
+            if (multisampled)
+            {
+                glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, internalFormat, width, height, GL_FALSE);
+            }
+            else
+            {
+                glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format, GL_UNSIGNED_BYTE, nullptr);
 
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            }
 
-            glFramebufferTexture2D(GL_FRAMEBUFFER, attachmentType, GL_TEXTURE_2D, id, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + index, TextureTarget(multisampled), id, 0);
+        }
+
+        static void AttachDepthTexture(uint32_t id, int samples, GLenum format, GLenum attachmentType, uint32_t width, uint32_t height)
+        {
+            bool multisampled = samples > 1;
+            if (multisampled)
+            {
+                glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, format, width, height, GL_FALSE);
+            }
+            else
+            {
+                glTexStorage2D(GL_TEXTURE_2D, 1, format, width, height);
+
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            }
+
+            glFramebufferTexture2D(GL_FRAMEBUFFER, attachmentType, TextureTarget(multisampled), id, 0);
         }
 
         bool IsDepthFormat(FramebufferTextureFormat format)
@@ -109,22 +130,24 @@ namespace VoxelEngine {
         glCreateFramebuffers(1, &m_RendererID);
         glBindFramebuffer(GL_FRAMEBUFFER, m_RendererID);
 
+        bool multisample = m_Specification.Samples > 1;
+
         if (m_ColorAttachmentSpecifications.size() != 0)
         {
             m_ColorAttachments.resize(m_ColorAttachmentSpecifications.size());
-            Utils::CreateTextures(m_ColorAttachments.data(), m_ColorAttachments.size());
+            Utils::CreateTextures(multisample, m_ColorAttachments.data(), m_ColorAttachments.size());
 
             for (int i = 0; i < m_ColorAttachments.size(); i++)
             {
-                Utils::BindTexture(m_ColorAttachments[i]);
+                Utils::BindTexture(multisample, m_ColorAttachments[i]);
 
                 switch (m_ColorAttachmentSpecifications[i])
                 {
                 case FramebufferTextureFormat::RGBA8:
-                    Utils::AttachColorTexture(m_ColorAttachments[i], GL_RGBA8, GL_RGBA, m_Specification.Width, m_Specification.Height, i);
+                    Utils::AttachColorTexture(m_ColorAttachments[i], m_Specification.Samples, GL_RGBA8, GL_RGBA, m_Specification.Width, m_Specification.Height, i);
                     break;
                 case FramebufferTextureFormat::RED_INTEGER:
-                    Utils::AttachColorTexture(m_ColorAttachments[i], GL_R32I, GL_RED_INTEGER, m_Specification.Width, m_Specification.Height, i);
+                    Utils::AttachColorTexture(m_ColorAttachments[i], m_Specification.Samples, GL_R32I, GL_RED_INTEGER, m_Specification.Width, m_Specification.Height, i);
                     break;
                 }
             }
@@ -132,12 +155,12 @@ namespace VoxelEngine {
 
         if (m_DepthAttachmentSpecification != FramebufferTextureFormat::None)
         {
-            Utils::CreateTextures(&m_DepthAttachment, 1);
-            Utils::BindTexture(m_DepthAttachment);
+            Utils::CreateTextures(multisample, &m_DepthAttachment, 1);
+            Utils::BindTexture(multisample, m_DepthAttachment);
             switch (m_DepthAttachmentSpecification)
             {
             case FramebufferTextureFormat::DEPTH24STENCIL8:
-                Utils::AttachDepthTexture(m_DepthAttachment, GL_DEPTH24_STENCIL8, GL_DEPTH_STENCIL_ATTACHMENT, m_Specification.Width, m_Specification.Height);
+                Utils::AttachDepthTexture(m_DepthAttachment, m_Specification.Samples, GL_DEPTH24_STENCIL8, GL_DEPTH_STENCIL_ATTACHMENT, m_Specification.Width, m_Specification.Height);
                 break;
             }
         }
@@ -162,13 +185,13 @@ namespace VoxelEngine {
     void Framebuffer::BindAttachmentTexture(uint32_t index, uint32_t slot)
     {
         glActiveTexture(GL_TEXTURE0 + slot);
-        glBindTexture(GL_TEXTURE_2D, m_ColorAttachments[index]);
+        glBindTexture(Utils::TextureTarget(m_Specification.Samples > 1), m_ColorAttachments[index]);
     }
 
     void Framebuffer::BindDepthTexture(uint32_t slot)
     {
         glActiveTexture(slot);
-        glBindTexture(GL_TEXTURE_2D, m_DepthAttachment);
+        glBindTexture(Utils::TextureTarget(m_Specification.Samples > 1), m_DepthAttachment);
     }
 
 }

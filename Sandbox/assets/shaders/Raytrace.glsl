@@ -13,6 +13,7 @@ void main()
 #version 460 core
 
 layout (location = 0) out vec4 o_Color;
+layout (location = 1) out float o_Depth;
 
 layout (std140, binding = 0) uniform DefaultSettings
 {
@@ -22,13 +23,20 @@ layout (std140, binding = 0) uniform DefaultSettings
     uniform float Time;
 };
 
+layout(binding = 1) uniform JitterSettings
+{
+	vec2 PreviousJitter;
+	vec2 CurrentJitter;
+    float JitterScale;
+};
+
 layout (std430, binding = 3) readonly buffer Octree
 {
     uint Voxels[];
 };
 
 #define EPSILON 0.01
-#define SAMPLES 2
+#define SAMPLES 4
 
 const vec3 POS[8] = {
 vec3(1, -1, -1),
@@ -237,20 +245,24 @@ vec4 trace(Ray ray, inout Hit hit) {
     return f;
 }
 
+float DistanceToDepth(float distance, float near, float far) {
+  return (-far * near) / (distance * (far - near) - far);
+}
+
 void main()
 {
 	vec2 uv = (gl_FragCoord.xy / ScreenSize) * 2.0 - 1.0;
 
     // Jitter for TAA
-    uint jitterSeed = uint(Time*1000.0);
-    uv += RandomDirection(jitterSeed).xy*0.001;
+    uv += CurrentJitter * JitterScale;
+    
+    uint randomState = int((uv.y * ScreenSize.x * ScreenSize.x * Time + uv.x * ScreenSize.y * Time));
 
 	vec4 rayClip = vec4(uv, -1.0, 1.0);
 	vec4 rayEye = inverse(CameraProjection) * rayClip;
 	rayEye = vec4(rayEye.xy, -1.0, 0.0);
 	vec3 rayWorld = (inverse(CameraView) * rayEye).xyz;
 
-    uint randomState = int((gl_FragCoord.y * ScreenSize.x + gl_FragCoord.x) * Time);
 
 	vec3 rayDir = normalize(rayWorld); 
 	vec3 rayOrigin = vec3(inverse(CameraView)[3]);
@@ -264,14 +276,18 @@ void main()
 
 	vec4 color = trace(ray, hit);
 
-    if (color.a < EPSILON) discard;
+    if (color.a < EPSILON)
+    {
+        o_Color = vec4(ray.d, 1.0);
+        return;
+    }
 
     vec3 normal = CalculateBoxNormal(hit.p, hit.minBox, hit.maxBox);
 
 	Ray aoRay;
     Hit aoHit;
 
-    float ao = 0;
+    float ao = 0.2;
 
     for (int i = 0; i < SAMPLES; i++)
     {
@@ -288,10 +304,12 @@ void main()
         if (aoResult.a < EPSILON) ao += 1;
     }
 
-    ao /= SAMPLES;
+    ao /= SAMPLES + 1;
 
     color *= ao;
 
 
     o_Color = vec4(color.rgb, 1.0);
+    o_Depth = hit.tmin;
+    gl_FragDepth = hit.tmin;
 }

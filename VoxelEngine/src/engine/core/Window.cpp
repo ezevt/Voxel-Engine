@@ -58,6 +58,8 @@ namespace VoxelEngine {
 		}
 
 		glViewport(0, 0, width, height);
+
+		glEnable(GL_MULTISAMPLE);
 	}
 
 	Window::~Window()
